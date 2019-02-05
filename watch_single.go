@@ -1,3 +1,5 @@
+// Copyright 2018 Datawire. All rights reserved.
+
 package k8sutil
 
 import (
