@@ -106,11 +106,11 @@ func (w *WatchingStore) run(ctx context.Context) {
 	exitCh := make(chan struct{})
 	exitCnt := 0
 
-	for _, watch := range w.watches {
-		go func() {
-			watch.run(ctx, w.Client, w.Logger, listCh, watchCh)
+	for _, wa := range w.watches {
+		go func(wa watch) {
+			wa.run(ctx, w.Client, w.Logger, listCh, watchCh)
 			exitCh <- struct{}{}
-		}()
+		}(wa)
 	}
 
 	dirty := false
@@ -123,7 +123,7 @@ func (w *WatchingStore) run(ctx context.Context) {
 			dirty = true
 		}
 	}
-	for {
+	for listCnt < len(w.watches) {
 		select {
 		case list := <-listCh:
 			for _, newResource := range list {
@@ -139,9 +139,6 @@ func (w *WatchingStore) run(ctx context.Context) {
 			}
 
 			listCnt++
-			if listCnt == len(w.watches) {
-				break
-			}
 		case <-exitCh:
 			cancelCtx()
 			exitCnt++
@@ -177,8 +174,8 @@ func (w *WatchingStore) run(ctx context.Context) {
 					w.notify()
 				}
 			case k8s.EventAdded, k8s.EventModified:
-				oldResource, _ := w.store[rt][uid]
-				if oldResource.GetMetadata().ResourceVersion != newResource.GetMetadata().ResourceVersion {
+				oldResource, existed := w.store[rt][uid]
+				if !existed || oldResource.GetMetadata().ResourceVersion != newResource.GetMetadata().ResourceVersion {
 					w.store[rt][uid] = newResource
 					w.notify()
 				}

@@ -73,7 +73,9 @@ func newWatch(namespace string, resourceList k8s.ResourceList) watch {
 	}
 }
 
-func (w watch) run(ctx context.Context, client *k8s.Client, logger Logger, listCh chan<- []k8s.Resource, watchCh chan<- watchEvent) {
+func (w watch) run(ctx context.Context, client *k8s.Client, logger Logger,
+	listCh chan<- []k8s.Resource, watchCh chan<- watchEvent) {
+
 	var resourceVersion string
 	for {
 		if ctx.Err() != nil {
@@ -92,7 +94,8 @@ func (w watch) run(ctx context.Context, client *k8s.Client, logger Logger, listC
 		if ctx.Err() != nil {
 			return
 		}
-		watcher, err := client.Watch(ctx, w.namespace, getNewResourceInstance(w.resource), k8s.ResourceVersion(resourceVersion))
+		watcher, err := client.Watch(ctx, w.namespace, getNewResourceInstance(w.resource),
+			k8s.ResourceVersion(resourceVersion))
 		if err != nil {
 			logger.Errorf("create %s (namespace=%q) watch: %v", reflect.TypeOf(w.resource), w.namespace, err)
 			if apiErr, ok := err.(*k8s.APIError); ok && apiErr.Code == http.StatusGone {
