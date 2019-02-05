@@ -1,0 +1,18 @@
+# teleproxy.mk
+/teleproxy
+/teleproxy.log
+
+# kubeapply.mk
+/kubeapply
+
+# kubernaut.mk
+*.knaut
+*.knaut.claim
+
+# docker.mk
+/docker-port-forward.lock
+/docker-port-forward.log
+/docker-registry.yaml.o
+
+# _go-common.mk
+/golangci-lint
