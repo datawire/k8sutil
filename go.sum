@@ -1,5 +1,5 @@
-github.com/LukeShu/k8s v1.2.1-0.20190205011721-e7a4ab0a52d7 h1:Fs4QC+aAOzbDP5OZz1slR3Fr5cOpsrIvv5EvVCj+fhI=
-github.com/LukeShu/k8s v1.2.1-0.20190205011721-e7a4ab0a52d7/go.mod h1:4BOrstHE+WGR3typcpa6Xg1W9CbwIYyjqmsQB1R2KKg=
+github.com/ericchiang/k8s v1.2.1-0.20190205025945-b68231b30f2d h1:H9MjK5wLKu5ntvQ4Gqego5T3h8uBvCohJCWmJmFZuFY=
+github.com/ericchiang/k8s v1.2.1-0.20190205025945-b68231b30f2d/go.mod h1:4BOrstHE+WGR3typcpa6Xg1W9CbwIYyjqmsQB1R2KKg=
 github.com/golang/protobuf v1.2.0 h1:P3YflyNX/ehuJFLhxviNdFxQPkGK5cDcApsge1SqnvM=
 github.com/golang/protobuf v1.2.0/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
 github.com/pkg/errors v0.8.1 h1:iURUrRGxPUNPdy5/HRSm+Yj6okJ6UtLINN0Q9M4+h3I=
