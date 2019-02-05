@@ -19,7 +19,7 @@ type Logger interface {
 }
 
 func getResourceListItems(list k8s.ResourceList) []k8s.Resource {
-	sliceValue := reflect.ValueOf(list).FieldByName("Items")
+	sliceValue := reflect.ValueOf(list).Elem().FieldByName("Items")
 	ret := make([]k8s.Resource, sliceValue.Len())
 	for i := 0; i < len(ret); i++ {
 		ret[i] = sliceValue.Index(i).Interface().(k8s.Resource)
@@ -51,7 +51,11 @@ func newWatch(namespace string, resourceList k8s.ResourceList) watch {
 	if listType.Kind() != reflect.Ptr {
 		panic(errors.Errorf("k8s.ResourceList type %s isn't a pointer", listType))
 	}
-	itemsField, ok := listType.FieldByName("Items")
+	listTypeElem := listType.Elem()
+	if listTypeElem.Kind() != reflect.Struct {
+		panic(errors.Errorf("k8s.ResourceList type %s isn't a pointer to a struct", listType))
+	}
+	itemsField, ok := listTypeElem.FieldByName("Items")
 	if !ok {
 		panic(errors.Errorf("k8s.ResourceList type %s doesn't have a .Items field", listType))
 	}
@@ -68,8 +72,8 @@ func newWatch(namespace string, resourceList k8s.ResourceList) watch {
 
 	return watch{
 		namespace:    namespace,
-		resource:     reflect.New(itemType).Interface().(k8s.Resource),
-		resourceList: reflect.New(listType).Interface().(k8s.ResourceList),
+		resource:     reflect.New(itemType.Elem()).Interface().(k8s.Resource),
+		resourceList: reflect.New(listType.Elem()).Interface().(k8s.ResourceList),
 	}
 }
 

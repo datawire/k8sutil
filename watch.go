@@ -114,6 +114,10 @@ func (w *WatchingStore) run(ctx context.Context) {
 	}
 
 	dirty := false
+	if w.store == nil {
+		w.store = map[reflect.Type]map[string]k8s.Resource{}
+		dirty = true
+	}
 	newUids := map[reflect.Type]map[string]struct{}{}
 	for _, watch := range w.watches {
 		rt := reflect.TypeOf(watch.resource)
