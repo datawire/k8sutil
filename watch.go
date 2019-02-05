@@ -10,20 +10,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Logger interface {
-	Errorf(args ...interface{})
-}
-
-type WatchingStore struct {
-	client   *k8s.Client
-	logger   Logger
-	callback func(Store)
-
-	watches []watch
-	store   map[reflect.Type]map[string]k8s.Resource
-}
-
+// A Store allows you to query the stored state of the cluster.
 type Store interface {
+	// List returns all stored resources with the same type as the
+	// given "sample" resource.  It is not valid to mutate any of
+	// the resource returned.
 	List(resourceType k8s.Resource) []k8s.Resource
 }
 
@@ -38,24 +29,61 @@ func (store mapStore) List(resourceType k8s.Resource) []k8s.Resource {
 	return ret
 }
 
-func NewWatchingStore(client *k8s.Client, logger Logger, callback func(Store)) *WatchingStore {
-	return &WatchingStore{
-		client:   client,
-		logger:   logger,
-		store:    map[reflect.Type]map[string]k8s.Resource{},
-		callback: callback,
-	}
+// WatchingStore watches a set of resources (specified with
+// .AddWatch() after creating the WatchingStore) and stores the
+// current state of the cluster.
+//
+// The specified Callback will only be called when the store is in a
+// "consistent" state.  It will not be called before a complete
+// listing for each of the added watches has been added to the store.
+//
+// The Callback is called synchronously.  The Callback is not told
+// what changed between callbacks, because there may be multiple
+// changes that are coalesced.
+type WatchingStore struct {
+	Client   *k8s.Client // must not be nil
+	Logger   Logger      // must not be nil
+	Callback func(Store) // must not be nil
+
+	watches []watch
+	store   map[reflect.Type]map[string]k8s.Resource
 }
 
 func (w *WatchingStore) notify() {
-	w.callback(mapStore(w.store))
+	w.Callback(mapStore(w.store))
 }
 
+// AddWatch adds to the resources that the WatchingStore keeps track
+// of.
+//
+// Use w.Client.Namespace to watch default namespace, or the special
+// value k8s.AllNamespaces to watch namespaces.
+//
+// The ResourceList specifies the type of the resources to watch; the
+// value itself is ignored.
+//
+// For example:
+//
+//     w.AddWatch(k8s.AllNamespaces, &corev1.PodList{})
+//
+// It is invalid to call .AddWatch() while .Run() is running.
 func (w *WatchingStore) AddWatch(namespace string, resourceList k8s.ResourceList) {
 	w.watches = append(w.watches, newWatch(namespace, resourceList))
 }
 
+// Run performs the initial list calls to populate the store, and then
+// launches the following watch calls to keep it up to date.
+//
+// It is invalid to call .AddWatch() while .Run() is running.
 func (w *WatchingStore) Run(ctx context.Context) error {
+	// The store is keyed by the resource type.  Because it is
+	// possible to register multiple watches for that resource
+	// type (in different namespaces), when one watch needs to
+	// re-list because of a 410 response, we need to force that
+	// for all watches, so that we don't miss delete events.  We
+	// do that by killing all watches when 1 dies, and restarting
+	// everything.
+	//
 	for {
 		if err := ctx.Err(); err != nil {
 			return err
@@ -64,6 +92,9 @@ func (w *WatchingStore) Run(ctx context.Context) error {
 	}
 }
 
+// run performs 1 "round" of list+watch calls.  Once the first watch
+// in this round dies, all others are canceled, so that they can all
+// be restarted.  See the comment in Run().
 func (w *WatchingStore) run(ctx context.Context) {
 	ctx, cancelCtx := context.WithCancel(ctx)
 
@@ -77,7 +108,7 @@ func (w *WatchingStore) run(ctx context.Context) {
 
 	for _, watch := range w.watches {
 		go func() {
-			watch.run(ctx, w.client, w.logger, listCh, watchCh)
+			watch.run(ctx, w.Client, w.Logger, listCh, watchCh)
 			exitCh <- struct{}{}
 		}()
 	}

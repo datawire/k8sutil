@@ -11,6 +11,13 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Logger describes what k8sutil utilities expect from a logger.  Any
+// logger implementation that provides these methods may be used with
+// k8sutil.
+type Logger interface {
+	Errorf(format string, args ...interface{})
+}
+
 func getResourceListItems(list k8s.ResourceList) []k8s.Resource {
 	sliceValue := reflect.ValueOf(list).FieldByName("Items")
 	ret := make([]k8s.Resource, sliceValue.Len())
